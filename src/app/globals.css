@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8f3ec;
+  --foreground: #2b1b1b;
+  --burgundy: #6b1f32;
+  --burgundy-dark: #481321;
+  --champagne: #c7a46a;
+  --glass: rgba(255, 255, 255, 0.55);
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  background-image: radial-gradient(circle at 12% 8%, rgba(199, 164, 106, 0.16), transparent 45%),
+    radial-gradient(circle at 88% 0%, rgba(107, 31, 50, 0.08), transparent 40%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background-color: var(--champagne);
+  color: var(--burgundy-dark);
+}
+
+:focus-visible {
+  outline: 2px solid var(--burgundy);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(107, 31, 50, 0.06) 25%, rgba(107, 31, 50, 0.12) 37%, rgba(107, 31, 50, 0.06) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
