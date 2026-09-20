@@ -1,21 +1,19 @@
-# M.R Cake Shop — V1 Catalogue Website
+# M.R Cake Shop — Website + Admin Dashboard
 
-A mobile-first cake catalogue and order-request website for **M.R Cake Shop** (Tiruppur, Tamil
-Nadu), built with a premium glassmorphism UI. Customers browse cakes, customise weight/shape/egg
-type/steps, and send an order request straight to WhatsApp. A built-in admin dashboard manages the
-entire catalogue — no code required.
-
-This is a **catalogue + order-request site**, not a payment or delivery system. See
-[V1 Limitations](#v1-limitations) below.
+A mobile-first cake catalogue and ordering site for **M.R Cake Shop** (Tiruppur, Tamil Nadu).
+Customers browse cakes, customise weight/shape/egg type/steps, and send an order request straight
+to WhatsApp. A full admin dashboard manages the catalogue, orders, customers, staff logins, and
+site content — backed by a real shared database, not just this browser.
 
 ---
 
 ## Tech Stack
 
-- Next.js 14 (App Router) + TypeScript, configured for **static export** (`output: 'export'`)
-- Tailwind CSS with a custom glassmorphism token system
-- No backend required for V1 — data lives in the browser's `localStorage`, behind a
-  `ProductRepository` / `SettingsRepository` abstraction (see [Architecture](#architecture))
+- Next.js 14 (App Router) + TypeScript, configured for **static export** (`output: 'export'`),
+  deployed to GitHub Pages
+- Tailwind CSS with a custom design system matching the M.R Cake Shop brand
+- **Supabase** (Postgres + Auth) as the real backend — every visitor and every admin device reads
+  and writes the same shared data; see [Architecture](#architecture)
 
 ## Local Development
 
@@ -24,11 +22,22 @@ npm install
 npm run dev
 ```
 
+You'll need a `.env.local` file with your Supabase credentials for the site to load any real
+data locally:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xyvsxetxyzaetkcigymi.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_k7tadVtWxs_szwQ_8qrZgw_Kh6Y1zR7
+```
+
+(The anon/publishable key is safe to expose — it's the public client key. Real access control is
+enforced by Postgres Row Level Security policies, not by keeping this key secret.)
+
 Visit `http://localhost:3000` for the customer site and `http://localhost:3000/admin` for the
 admin dashboard.
 
-**Note on fonts:** the first build needs internet access once, to fetch Playfair Display and
-Inter from Google Fonts (Next.js then self-hosts them — no runtime calls to Google after that).
+**Note on fonts:** the first build needs internet access once, to fetch Baloo 2, Dancing Script
+and Inter from Google Fonts (Next.js then self-hosts them — no runtime calls to Google after that).
 
 ## Production Build
 
@@ -36,15 +45,22 @@ Inter from Google Fonts (Next.js then self-hosts them — no runtime calls to Go
 npm run build
 ```
 
-This produces a fully static site in `./out` — no Node.js server needed to host it.
+This produces a fully static site in `./out` — no Node.js server needed to host it. The Supabase
+env vars above must be set at build time (see the GitHub Actions workflow below for how this
+happens on deploy).
 
 ## GitHub Deployment
 
-A ready-made GitHub Actions workflow is included at `.github/workflows/deploy.yml`. To use it:
+The included workflow at `.github/workflows/deploy.yml` builds and deploys automatically on every
+push to `main`. It needs two repo secrets — add them at **Settings → Secrets and variables →
+Actions → New repository secret**:
 
-1. Push this repository to GitHub.
-2. In **Settings → Pages**, set the source to **GitHub Actions**.
-3. Push to `main` (or run the workflow manually) — it builds and deploys automatically.
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+Use the same values as in your local `.env.local` above.
 
 **Project pages vs. custom domain:** this repo is currently live at
 `https://mrcakeshoptn.github.io/mrcakeshop/` — a GitHub Pages *project* page, served from the
@@ -56,18 +72,11 @@ domain's *root* — at that point `/mrcakeshop` would be wrong and must be remov
 happens: change `NEXT_PUBLIC_BASE_PATH: '/mrcakeshop'` to `NEXT_PUBLIC_BASE_PATH: ''` in
 `.github/workflows/deploy.yml`, and change the default in `next.config.mjs` to `''` too — then
 redeploy. Leaving the sub-path set after switching to the custom domain will break the logo, the
-favicon, and internal navigation, in the same way they were broken before this fix.
+favicon, and internal navigation.
 
 ## Custom Domain — mrcakeshop.in
 
-`public/CNAME` is already set to:
-
-```
-mrcakeshop.in
-```
-
-At your domain registrar (wherever `mrcakeshop.in` is registered — GoDaddy, BigRock, Hostinger,
-Namecheap, etc.), add these DNS records:
+`public/CNAME` is already set to `mrcakeshop.in`. At your domain registrar, add:
 
 **A records** (apex domain, `mrcakeshop.in`) — point all four to GitHub's IPs:
 ```
@@ -76,8 +85,6 @@ Namecheap, etc.), add these DNS records:
 185.199.110.153
 185.199.111.153
 ```
-Some registrars want the host/name field set to `@` for these; others infer it automatically for
-the root domain.
 
 **CNAME record** (for `www.mrcakeshop.in`, optional but recommended):
 ```
@@ -86,36 +93,55 @@ www → <your-github-username>.github.io
 
 Then, in the GitHub repository → **Settings → Pages → Custom domain**, enter `mrcakeshop.in` and
 save. GitHub Pages issues an HTTPS certificate automatically once DNS resolves — this can take up
-to a
-few hours. If GitHub's own DNS requirements have changed since this was written, their
+to a few hours. If GitHub's own DNS requirements have changed since this was written, their
 [Pages documentation](https://docs.github.com/pages) is the final authority.
 
 ## Admin Dashboard
 
-Visit `/admin`. The default demo password is:
+Visit `/admin`. This uses **real Supabase Auth** — there's no shared demo password anymore.
 
-```
-mrcake-demo
-```
+**Creating your first login:** open your Supabase project dashboard → **Authentication → Users →
+Add User**, enter your email and a password, and log in with those at `/admin/login`. A matching
+staff profile is created for you automatically the first time you log in.
 
-Change it by setting the `NEXT_PUBLIC_ADMIN_DEMO_PASSWORD` environment variable at build time
-(there's a commented slot for it as a GitHub secret in the deploy workflow) — **never commit a
-real password to source control.**
+**Adding more staff:** repeat the same step for each person — every admin gets their own login,
+never share one. See `/admin/team` in the dashboard for the current staff list and a reminder of
+these steps.
 
 From the dashboard you can:
-- Add, edit, duplicate, activate/deactivate, and feature cakes
-- Set weight-based pricing, shape charges, eggless charges, and step rules per cake — by default,
-  2-step is available from 1.5 kg and 3-step from 3 kg, editable per cake in its pricing form
-- Upload and manage product images (auto-compressed for browser storage)
-- Configure business details, WhatsApp number, Google Maps link, Instagram link, currency, and
-  hero image
-- View and manage your **customer list** — anyone who places an order or sends a custom cake
-  request is saved here automatically (name + mobile), and you can add, edit, or export them too
-- **Export** your catalogue as a JSON backup, **import** it back, or **reset to demo data**
+- **Products** — add, edit, duplicate, activate/deactivate, and feature cakes; set weight-based
+  pricing, shape charges, eggless charges, and step rules per cake. By default, 2-step is available
+  from 1.5 kg and 3-step from 3 kg, editable per cake. Weights can start as low as 0.5 kg. A
+  "Fast-Moving" flag marks cakes you keep pre-made and ready (typically 0.5–1 kg sizes)
+- **Orders** — every order and custom cake request, from any device, in one place. Confirming an
+  order calculates an expected pickup-ready time using your rules in Settings → Order Readiness
+- **Customers** — a real, shared customer list; anyone who orders or sends a custom request is
+  saved here automatically, visible to every logged-in staff member
+- **Team** — see who has dashboard access
+- **Settings** — business details, WhatsApp number, Google Maps and Instagram links, currency,
+  delivery on/off (shows "coming soon" when off), order-readiness time rules, and the text shown
+  on the About Us and Privacy Policy pages
+- **Export** your catalogue or customer list as a JSON backup any time
+
+## Order Readiness Rules
+
+Configured in Settings → Order Readiness. When you confirm an order in Admin → Orders, the app
+works out an expected ready-for-pickup time using these admin-editable rules (all times are
+Tiruppur local time, IST):
+
+- **Closed hours** (default midnight–6am): orders generally shouldn't be confirmed in this window
+- **Morning window** (default until 1pm): normal cakes (Fresh Cream, Butter Cream) ready in a
+  configurable number of hours (default 2); Designer/Custom/Eggless cakes take longer (default 6)
+- **Afternoon window** (default 1pm–6pm): all cakes ready in a configurable number of hours
+  (default 3)
+- **Evening** (after 6pm): ready by a configurable hour the next morning (default 6am)
+
+These are starting defaults matching a typical bakery day — tune every number in Settings to match
+how your kitchen actually runs.
 
 ## Brand Assets
 
-The M.R Cake Shop logo is baked into the site as static files, not generated from Admin Settings:
+The M.R Cake Shop logo is baked into the site as static files:
 
 ```
 public/logo-icon.png     — chef-hat icon, used in the header and admin login (120×120)
@@ -124,42 +150,59 @@ src/app/icon.png         — favicon (Next.js picks this up automatically; 180×
 ```
 
 To update the brand later, replace these three files with new exports at the same names and
-dimensions — no code changes needed. The Admin Settings "Logo" upload field is separate: it's a
-placeholder for a future per-tenant logo system and isn't wired into the header/footer in this V1.
+dimensions — no code changes needed.
 
 **Typography:** headings use Baloo 2 (bold and rounded, echoing the logo's chunky lettering) and
-the tagline uses Dancing Script (matching the logo's cursive strokes) — both replace the more
-formal serif originally used in early drafts. Prices are set in Inter with tabular numerals
-rather than the display font, since the display font's digits and rupee symbol didn't read
-clearly at small sizes.
+the tagline uses Dancing Script (matching the logo's cursive strokes). Prices are set in Inter
+with tabular numerals rather than the display font, since the display font's digits and rupee
+symbol didn't read clearly at small sizes.
 
 ## Customer-Facing Pages
 
-Beyond the catalogue, the site includes:
-- **About** (`/about`) — business story, pulled in part from your Settings
-- **Contact** (`/contact`) — phone, WhatsApp, and address, live from Settings
-- **Privacy Policy** (`/privacy`) — placeholder policy text; **have a legal professional review
-  and adapt it** (including for India's Digital Personal Data Protection Act) before publishing
+- **About** (`/about`) — content is fully editable from Admin → Settings
+- **Contact** (`/contact`) — phone, WhatsApp, Google Maps and Instagram links, live from Settings
+- **Privacy Policy** (`/privacy`) — content is fully editable from Admin → Settings; **have a
+  legal professional review it** (including for India's Digital Personal Data Protection Act)
+  before relying on it
 
 All three are linked from the footer on every page.
 
 ## Architecture
 
-Three repository interfaces isolate the UI from the storage mechanism:
+A real Postgres database (via Supabase) backs everything — no data lives only in one browser
+anymore. Five tables: `products`, `settings` (a single row), `customers`, `orders`, and
+`admin_profiles`. Row Level Security policies control access:
+
+- `products` and `settings` are readable by anyone (it's a public storefront), writable only by
+  logged-in staff
+- `customers` and `orders` are **never** read or written directly by the public — a customer
+  placing an order calls the `submit_order()` Postgres function instead, which safely creates or
+  updates their customer record and order behind the scenes without ever exposing other people's
+  data to them. Only logged-in staff can list or update these tables directly
+- `admin_profiles` extends Supabase's own `auth.users` — a database trigger creates a profile row
+  automatically the first time someone logs in
+
+Repository interfaces still isolate the UI from the storage mechanism, the same pattern as before,
+just backed by Supabase calls instead of `localStorage`:
 
 ```
 ProductRepository   — src/lib/repositories/productRepository.ts
 SettingsRepository  — src/lib/repositories/settingsRepository.ts
 CustomerRepository  — src/lib/repositories/customerRepository.ts
+OrderRepository     — src/lib/repositories/orderRepository.ts
 ```
 
-V1 implements all three against `localStorage`. To move to a real backend later
-(PostgreSQL + Prisma + object storage + real authentication), write new implementations of these
-same interfaces — no page or component needs to change.
+Pricing logic lives in one place, `src/lib/pricing.ts`, and order-readiness time logic lives in
+`src/lib/readiness.ts` — every screen that needs either calls through these rather than
+re-deriving them.
 
-Pricing logic lives in one place, `src/lib/pricing.ts`, and every screen (catalogue card, detail
-modal, admin preview, WhatsApp message) calls through it — so pricing never drifts between
-screens.
+### Supabase GitHub integration (optional)
+
+Supabase can also sync database schema changes from this repo automatically: Project Settings →
+Integrations → GitHub Integration, pointing at a `supabase/migrations/` folder. This project's
+schema was applied directly via the Supabase MCP connector rather than committed migration files,
+so if you want schema changes to flow through git going forward, set that up and run
+`supabase db pull` to capture the current schema as a first migration.
 
 ## Exact Values You Need to Replace Before Going Live
 
@@ -173,57 +216,33 @@ screens.
 | Hero image | Admin → Settings → Branding | Unsplash demo photo |
 | Real cake photos | Admin → Products → each cake | Unsplash demo photography |
 | Real cake prices | Admin → Products → each cake's pricing tables | demo prices |
-| Admin password | `NEXT_PUBLIC_ADMIN_DEMO_PASSWORD` build variable | `mrcake-demo` |
+| Your admin login | Supabase Dashboard → Authentication → Users | none created yet |
 
-## V1 Limitations
+## Current Limitations
 
-This version intentionally does **not** include:
-
-- No real backend or database (catalogue, settings, and customer records all live in the
-  visitor's or admin's own browser via `localStorage` — each browser/device has its own copy
-  until you export/import)
-- **Customer records are per-device, not shared.** This is the most important limitation to
-  understand: when a real customer places an order or sends a custom cake request from their own
-  phone on the live site, their name and mobile number save into *their own* browser's storage —
-  not into the shop owner's `/admin/customers` list. The admin's customer list only fills up with
-  records created on the admin's own device (orders placed there, or customers added manually).
-  Genuinely centralizing every customer who orders — across every visitor's device — requires a
-  real backend and database, which is exactly the kind of upgrade the repository pattern below is
-  designed to make possible without a frontend rewrite. Until then, the practical way to keep a
-  real customer list is to add customers manually in Admin → Customers after confirming each order
-  on WhatsApp.
-- No production-grade authentication for `/admin` (see the code comments in `src/lib/adminAuth.ts`)
-- No online payment
-- No inventory management
-- No delivery tracking or logistics integration
+- No online payment — orders are requests, confirmed manually over WhatsApp
+- No delivery logistics — pickup only for now; the Delivery Enabled setting only changes the
+  "coming soon" message, it doesn't add courier integration
+- No inventory management or automatic stock tracking
 - No WhatsApp Business API — orders open a pre-filled `wa.me` chat that a staff member confirms
   manually
-- Images are stored as compressed data URLs in the browser, not in cloud object storage
-- Reference images for custom cakes cannot be attached to the WhatsApp message automatically —
-  the customer attaches them manually inside the WhatsApp chat that opens
+- Reference images for custom cakes can't be attached to the WhatsApp message automatically — the
+  customer attaches them manually inside the WhatsApp chat that opens
+- Staff account creation happens in the Supabase Dashboard, not from within the app itself — this
+  is intentional (creating logins requires privileged access that should never sit in client-side
+  code), but it does mean the shop owner needs occasional access to Supabase directly
 
 ## Future Upgrade Roadmap
 
-The service boundaries are already in place for these to be added without a frontend rewrite:
+With a real backend now in place, natural next additions include:
 
 ```
-Customer Website
-        |
-        v
-       API
-        |
-        +---- Product Service
-        +---- Order Service
-        +---- Customer Service
-        +---- Payment Service (e.g. Razorpay)
-        +---- Delivery Service
-        +---- WhatsApp Business API Service
-        +---- Inventory Service
-        +---- Production/Kitchen Service
-        |
-        v
-   PostgreSQL
+Payment integration (e.g. Razorpay) for deposits or full payment
+Delivery logistics and courier integration
+WhatsApp Business API for automated order confirmations
+Inventory tracking tied to the Fast-Moving flag
+Role-based permissions in Admin → Team (owner vs. staff capabilities)
 ```
 
-Order status could then progress through: Request Received → Quote Sent → Confirmed → Payment
-Pending → Payment Received → Production → Ready → Out for Delivery → Completed / Cancelled.
+Order status already progresses through: Pending → Confirmed → Ready → Completed (or Cancelled)
+in Admin → Orders — payment and delivery stages would slot into that same flow.

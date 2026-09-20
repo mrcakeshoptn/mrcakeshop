@@ -40,7 +40,13 @@ jobs:
           # only if you switch to a custom domain (public/CNAME) or a user/org
           # page, or to '/<new-repo-name>' if you rename the GitHub repo.
           NEXT_PUBLIC_BASE_PATH: '/mrcakeshop'
-          NEXT_PUBLIC_ADMIN_DEMO_PASSWORD: ${{ secrets.ADMIN_DEMO_PASSWORD }}
+          # Supabase project credentials — set these in Settings → Secrets and
+          # variables → Actions. The anon key is safe to expose (it's the
+          # public client key; real access control is Postgres Row Level
+          # Security, not secrecy of this key) but it still lives as a repo
+          # secret here so it's easy to rotate without a code change.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Add .nojekyll
         run: touch ./out/.nojekyll

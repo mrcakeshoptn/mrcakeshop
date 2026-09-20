@@ -9,7 +9,7 @@ import GlassSelect from '@/components/glass/GlassSelect';
 
 interface ProductFormProps {
   product: CakeProduct;
-  onSave: (product: CakeProduct) => void;
+  onSave: (product: CakeProduct) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -394,6 +394,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
               ['designer', 'Designer Cake'],
               ['customAvailable', 'Custom Available'],
               ['egglessAvailable', 'Eggless Available'],
+              ['fastMoving', 'Fast-Moving (pre-made, ready)'],
             ] as [keyof CakeProduct, string][]
           ).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 rounded-xl border border-white/60 bg-white/40 px-3 py-2 text-sm text-ink/75">

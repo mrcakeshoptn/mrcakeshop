@@ -1,43 +1,11 @@
-// Thin, typed wrapper around window.localStorage. Kept separate from the
-// repositories below so the *storage mechanism* (browser localStorage for the
-// V1 demo) is isolated from the *repository interfaces* the UI depends on.
-// Swapping to a real backend later means rewriting this file and the two
-// repository implementations — no UI component needs to change.
-
-export function readJSON<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-export function writeJSON<T>(key: string, value: T): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (err) {
-    console.error(`Failed to save "${key}" to this browser's storage.`, err);
-    return false;
-  }
-}
-
-export function removeKey(key: string) {
-  if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(key);
-}
-
 const MAX_DIMENSION = 1280;
 const JPEG_QUALITY = 0.8;
 
 /**
  * Resizes and compresses an uploaded image in the browser before it is stored
- * as a data URL. Keeps demo catalogue data from bloating localStorage (which
- * has a hard ~5MB ceiling per origin in most browsers).
+ * as a data URL (used for the hero image and other small branding assets —
+ * product photos should generally be hosted images, but this keeps any
+ * inline-uploaded image reasonably sized).
  */
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

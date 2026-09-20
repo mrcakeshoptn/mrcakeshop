@@ -15,29 +15,31 @@ export default function AdminProductsPage() {
   const { products, loading, refresh } = useAllProducts();
   const [editing, setEditing] = useState<CakeProduct | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = (product: CakeProduct) => {
-    repo.save(product);
+  const handleSave = async (product: CakeProduct) => {
+    setBusy(true);
+    await repo.save(product);
+    setBusy(false);
     setEditing(null);
     refresh();
   };
 
-  const handleDelete = (id: string) => {
-    repo.remove(id);
+  const handleDelete = async (id: string) => {
+    await repo.remove(id);
     setConfirmDeleteId(null);
     refresh();
   };
 
-  const handleDuplicate = (id: string) => {
-    repo.duplicate(id);
+  const handleDuplicate = async (id: string) => {
+    await repo.duplicate(id);
     refresh();
   };
 
-  const toggle = (product: CakeProduct, field: 'active' | 'featured') => {
-    repo.save({ ...product, [field]: !product[field] });
+  const toggle = async (product: CakeProduct, field: 'active' | 'featured') => {
+    await repo.save({ ...product, [field]: !product[field] });
     refresh();
   };
 
@@ -54,24 +56,23 @@ export default function AdminProductsPage() {
   const handleImport = (file: File) => {
     setImportError(null);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const data = JSON.parse(reader.result as string);
         if (!Array.isArray(data)) throw new Error('not an array');
-        repo.replaceAll(data as CakeProduct[]);
+        setBusy(true);
+        await repo.replaceAll(data as CakeProduct[]);
+        setBusy(false);
         refresh();
       } catch {
-        setImportError('That file doesn\u2019t look like a valid catalogue export. Please choose a JSON file exported from this dashboard.');
+        setBusy(false);
+        setImportError(
+          'That file doesn\u2019t look like a valid catalogue export. Please choose a JSON file exported from this dashboard.'
+        );
       }
     };
     reader.onerror = () => setImportError('That file could not be read.');
     reader.readAsText(file);
-  };
-
-  const handleReset = () => {
-    repo.resetToDemoData();
-    setConfirmReset(false);
-    refresh();
   };
 
   return (
@@ -95,14 +96,16 @@ export default function AdminProductsPage() {
             onChange={(e) => e.target.files?.[0] && handleImport(e.target.files[0])}
           />
         </div>
-        <GlassButton size="sm" variant="ghost" onClick={() => setConfirmReset(true)}>
-          Reset Demo Data
-        </GlassButton>
+        {busy && <span className="text-xs text-ink/50">Saving…</span>}
       </div>
       {importError && <p className="mb-3 text-sm text-red-600">{importError}</p>}
+      <p className="mb-4 max-w-2xl text-xs text-ink/50">
+        Import replaces the entire live catalogue for every visitor — export a backup first if
+        you're not sure.
+      </p>
 
       <GlassCard padded={false} className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b border-white/60 text-left text-xs uppercase tracking-wide text-ink/50">
               <th className="px-4 py-3">Image</th>
@@ -142,7 +145,10 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-ink">{p.name}</p>
-                      {p.featured && <span className="text-xs text-champagne">★ Featured</span>}
+                      <div className="flex gap-1.5">
+                        {p.featured && <span className="text-xs text-champagne">★ Featured</span>}
+                        {p.fastMoving && <span className="text-xs text-burgundy/70">⚡ Fast-moving</span>}
+                      </div>
                     </td>
                     <td className="px-4 py-3 capitalize text-ink/70">{p.category}</td>
                     <td className="px-4 py-3 text-ink/70">
@@ -197,8 +203,8 @@ export default function AdminProductsPage() {
 
       <GlassModal open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} title="Delete this cake?">
         <p className="text-sm text-ink/70">
-          This removes it from your catalogue permanently. This can&apos;t be undone unless you have
-          an exported backup.
+          This removes it from the live catalogue for every visitor, permanently. This can&apos;t be
+          undone unless you have an exported backup.
         </p>
         <div className="mt-5 flex justify-end gap-3">
           <GlassButton variant="ghost" onClick={() => setConfirmDeleteId(null)}>
@@ -211,19 +217,6 @@ export default function AdminProductsPage() {
           >
             Delete Cake
           </GlassButton>
-        </div>
-      </GlassModal>
-
-      <GlassModal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset to demo data?">
-        <p className="text-sm text-ink/70">
-          This replaces your entire catalogue with the original demo cakes and prices. Export a
-          backup first if you want to keep your current catalogue.
-        </p>
-        <div className="mt-5 flex justify-end gap-3">
-          <GlassButton variant="ghost" onClick={() => setConfirmReset(false)}>
-            Cancel
-          </GlassButton>
-          <GlassButton onClick={handleReset}>Reset Demo Data</GlassButton>
         </div>
       </GlassModal>
     </div>

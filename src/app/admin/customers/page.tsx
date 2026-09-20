@@ -32,14 +32,14 @@ export default function AdminCustomersPage() {
     );
   });
 
-  const handleSave = (customer: Customer) => {
-    repo.save(customer);
+  const handleSave = async (customer: Customer) => {
+    await repo.save(customer);
     setEditing(null);
     refresh();
   };
 
-  const handleDelete = (id: string) => {
-    repo.remove(id);
+  const handleDelete = async (id: string) => {
+    await repo.remove(id);
     setConfirmDeleteId(null);
     refresh();
   };
@@ -58,11 +58,7 @@ export default function AdminCustomersPage() {
     <div>
       <p className="mb-5 max-w-2xl text-sm text-ink/60">
         Every customer who places an order, sends a custom cake request, or is added here
-        manually — saved right in this browser. <strong className="text-ink/80">Because this V1
-        has no shared backend, a record only lands here if it was created on this same device.</strong>{' '}
-        If a customer orders from their own phone, their details save to their phone, not to
-        this dashboard — see the README for what this means and how to move to a shared,
-        multi-device customer list.
+        manually — shared across every device, and visible to any logged-in staff member.
       </p>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -166,7 +162,7 @@ function CustomerForm({
   onCancel,
 }: {
   customer: Customer;
-  onSave: (c: Customer) => void;
+  onSave: (c: Customer) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState<Customer>(customer);

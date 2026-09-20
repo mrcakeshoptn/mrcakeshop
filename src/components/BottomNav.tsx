@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useShopSettings } from '@/lib/hooks';
 import { buildWhatsAppUrl } from '@/lib/whatsapp';
+import { normalizePathname } from '@/lib/normalizePathname';
 
 const items = [
   { href: '/', label: 'Home', icon: HomeIcon },
@@ -14,7 +15,7 @@ const items = [
 
 export default function BottomNav() {
   const { settings } = useShopSettings();
-  const pathname = usePathname();
+  const pathname = normalizePathname(usePathname());
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
 

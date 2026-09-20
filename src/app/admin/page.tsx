@@ -1,16 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useAllProducts, useCustomers } from '@/lib/hooks';
+import { useAllProducts, useCustomers, useOrders } from '@/lib/hooks';
 import GlassCard from '@/components/glass/GlassCard';
 import GlassButton from '@/components/glass/GlassButton';
 
 export default function AdminDashboardPage() {
   const { products, loading } = useAllProducts();
   const { customers, loading: customersLoading } = useCustomers();
+  const { orders, loading: ordersLoading } = useOrders();
+
+  const pendingOrders = orders.filter((o) => o.status === 'pending').length;
 
   const stats = [
-    { label: 'Total Cakes', value: products.length, loading },
+    { label: 'Pending Orders', value: pendingOrders, loading: ordersLoading },
     { label: 'Active Cakes', value: products.filter((p) => p.active).length, loading },
     { label: 'Featured Cakes', value: products.filter((p) => p.featured).length, loading },
     { label: 'Customers', value: customers.length, loading: customersLoading },
@@ -32,16 +35,16 @@ export default function AdminDashboardPage() {
         <ol className="mt-3 space-y-2 text-sm text-ink/70">
           <li>1. Go to <strong>Products</strong> and add your real cakes, images and prices.</li>
           <li>2. Set your WhatsApp number and business details in <strong>Settings</strong>.</li>
-          <li>3. Check <strong>Customers</strong> — anyone who orders or sends a custom request is saved there automatically.</li>
-          <li>4. Export your catalogue and customer list as backups any time.</li>
+          <li>3. Check <strong>Orders</strong> to confirm new orders and see their ready time.</li>
+          <li>4. <strong>Customers</strong> fills in automatically as orders and requests come in.</li>
         </ol>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/admin/products">
-            <GlassButton size="sm">Manage Products</GlassButton>
+          <Link href="/admin/orders">
+            <GlassButton size="sm">View Orders</GlassButton>
           </Link>
-          <Link href="/admin/customers">
+          <Link href="/admin/products">
             <GlassButton size="sm" variant="secondary">
-              View Customers
+              Manage Products
             </GlassButton>
           </Link>
           <Link href="/admin/settings">

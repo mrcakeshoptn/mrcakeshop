@@ -11,7 +11,7 @@ import {
   isWeightOverMax,
 } from '@/lib/pricing';
 import { buildOrderMessage, buildOversizedQuoteMessage, buildWhatsAppUrl } from '@/lib/whatsapp';
-import { useCustomerRepository } from '@/lib/repositories/customerRepository';
+import { submitCatalogOrder } from '@/lib/orders';
 import GlassModal from '@/components/glass/GlassModal';
 import GlassButton from '@/components/glass/GlassButton';
 import { GlassInput } from '@/components/glass/GlassInput';
@@ -30,7 +30,6 @@ const shapes: { value: CakeShape; label: string }[] = [
 ];
 
 export default function CakeDetailModal({ product, settings, onClose }: CakeDetailModalProps) {
-  const customerRepo = useCustomerRepository();
   const weights = useMemo(() => (product ? getAvailableWeights(product) : []), [product]);
 
   const [weightKg, setWeightKg] = useState<number>(0);
@@ -41,6 +40,7 @@ export default function CakeDetailModal({ product, settings, onClose }: CakeDeta
   const [customerName, setCustomerName] = useState('');
   const [customerMobile, setCustomerMobile] = useState('');
   const [activeImage, setActiveImage] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (product && weights.length > 0) {
@@ -68,11 +68,13 @@ export default function CakeDetailModal({ product, settings, onClose }: CakeDeta
     if (!nextAvailable.includes(steps)) setSteps(nextAvailable[0] ?? 1);
   };
 
-  const handleOrder = () => {
+  const handleOrder = async () => {
     if (!settings.whatsappOrderEnabled) return;
-    if (customerMobile.trim()) {
-      customerRepo.upsertByMobile({ name: customerName, mobile: customerMobile, source: 'order' });
+    setSubmitting(true);
+    if (!oversized) {
+      await submitCatalogOrder(product, { weightKg, shape, eggType, steps }, cakeMessage, customerName, customerMobile, settings);
     }
+    setSubmitting(false);
     const message = oversized
       ? buildOversizedQuoteMessage(settings.businessName, weightKg)
       : buildOrderMessage(
@@ -222,8 +224,8 @@ export default function CakeDetailModal({ product, settings, onClose }: CakeDeta
               <p className="mt-1 text-sm text-ink/70">
                 For cakes above {product.maximumStandardWeight} kg, please contact us for a custom quote.
               </p>
-              <GlassButton variant="whatsapp" className="mt-3 w-full" onClick={handleOrder}>
-                Request Quote on WhatsApp
+              <GlassButton variant="whatsapp" className="mt-3 w-full" onClick={handleOrder} disabled={submitting}>
+                {submitting ? 'Placing…' : 'Request Quote on WhatsApp'}
               </GlassButton>
             </div>
           ) : (
@@ -241,12 +243,13 @@ export default function CakeDetailModal({ product, settings, onClose }: CakeDeta
                 variant="whatsapp"
                 className="mt-4 w-full"
                 onClick={handleOrder}
-                disabled={!settings.whatsappOrderEnabled}
+                disabled={!settings.whatsappOrderEnabled || submitting}
               >
-                Order via WhatsApp
+                {submitting ? 'Placing…' : 'Order via WhatsApp'}
               </GlassButton>
               <p className="mt-2 text-center text-[11px] leading-snug text-ink/45">
                 This is an order request. Your order will be confirmed by {settings.businessName} through WhatsApp.
+                {!settings.deliveryEnabled && ' Pickup only — delivery coming soon.'}
               </p>
             </div>
           )}

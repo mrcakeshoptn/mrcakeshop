@@ -1,39 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { isLoggedIn, logout } from '@/lib/adminAuth';
+import { logout } from '@/lib/adminAuth';
+import { useAdminSession } from '@/lib/hooks';
+import { normalizePathname } from '@/lib/normalizePathname';
 import GlassButton from '@/components/glass/GlassButton';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/customers', label: 'Customers' },
+  { href: '/admin/team', label: 'Team' },
   { href: '/admin/settings', label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = normalizePathname(rawPathname);
   const router = useRouter();
   const isLoginPage = pathname === '/admin/login';
-  const [checked, setChecked] = useState(false);
+  const { session, checked } = useAdminSession();
 
   useEffect(() => {
-    if (isLoginPage) {
-      setChecked(true);
-      return;
-    }
-    if (!isLoggedIn()) {
+    if (isLoginPage) return;
+    if (checked && !session) {
       router.replace('/admin/login');
-    } else {
-      setChecked(true);
     }
-  }, [isLoginPage, router]);
+  }, [isLoginPage, checked, session, router]);
 
   if (isLoginPage) return <>{children}</>;
 
-  if (!checked) {
+  if (!checked || !session) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-ink/50">Checking access…</div>
     );
@@ -64,8 +64,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <GlassButton
             variant="secondary"
             size="sm"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               router.replace('/admin/login');
             }}
           >

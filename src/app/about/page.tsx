@@ -3,9 +3,17 @@
 import { useShopSettings } from '@/lib/hooks';
 import GlassCard from '@/components/glass/GlassCard';
 
+const FALLBACK = (name: string, address: string) => `${name} bakes fresh cream, butter cream and designer cakes for the celebrations that matter most — birthdays, anniversaries, weddings and everyday moments worth marking with something sweet. Every cake is made to order, using fresh ingredients and finished by hand.
+
+We're based in ${address}, and we keep things simple: browse the catalogue, choose your weight, shape and flavour, and send us your order request on WhatsApp. We'll confirm availability, final pricing and your pickup details directly with you.
+
+For custom designs — theme cakes, photo cakes, or anything you have in mind — the Custom Cake page lets you share your reference and requirements directly with our team.`;
+
 export default function AboutPage() {
   const { settings } = useShopSettings();
   const name = settings?.businessName || 'M.R Cake Shop';
+  const content = settings?.aboutContent?.trim() || FALLBACK(name, settings?.address || 'Tiruppur, Tamil Nadu');
+  const paragraphs = content.split(/\n\s*\n/).filter(Boolean);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
@@ -17,25 +25,11 @@ export default function AboutPage() {
       </div>
 
       <GlassCard className="space-y-5 p-7 sm:p-9">
-        <p className="text-sm leading-relaxed text-ink/75">
-          {name} bakes fresh cream, butter cream and designer cakes for the celebrations that
-          matter most — birthdays, anniversaries, weddings and everyday moments worth marking
-          with something sweet. Every cake is made to order, using fresh ingredients and finished
-          by hand.
-        </p>
-        <p className="text-sm leading-relaxed text-ink/75">
-          We&apos;re based in {settings?.address || 'Tiruppur, Tamil Nadu'}, and we keep things
-          simple: browse the catalogue, choose your weight, shape and flavour, and send us your
-          order request on WhatsApp. We&apos;ll confirm availability, final pricing and your
-          pickup or delivery details directly with you.
-        </p>
-        <p className="text-sm leading-relaxed text-ink/75">
-          For custom designs — theme cakes, photo cakes, or anything you have in mind — the{' '}
-          <a href="/custom" className="font-medium text-burgundy hover:underline">
-            Custom Cake
-          </a>{' '}
-          page lets you share your reference and requirements directly with our team.
-        </p>
+        {paragraphs.map((p, i) => (
+          <p key={i} className="text-sm leading-relaxed text-ink/75">
+            {p}
+          </p>
+        ))}
 
         <div className="grid grid-cols-1 gap-4 border-t border-white/60 pt-6 sm:grid-cols-3">
           <div className="text-center">

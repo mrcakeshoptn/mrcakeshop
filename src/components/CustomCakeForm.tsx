@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useState } from 'react';
 import { CustomCakeRequest } from '@/types/cake';
 import { ShopSettings } from '@/types/settings';
 import { buildCustomCakeMessage, buildWhatsAppUrl } from '@/lib/whatsapp';
-import { useCustomerRepository } from '@/lib/repositories/customerRepository';
+import { submitCustomCakeOrder } from '@/lib/orders';
 import GlassCard from '@/components/glass/GlassCard';
 import GlassButton from '@/components/glass/GlassButton';
 import GlassInput, { GlassTextarea } from '@/components/glass/GlassInput';
@@ -29,10 +29,10 @@ const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_MB = 8;
 
 export default function CustomCakeForm({ settings }: { settings: ShopSettings }) {
-  const customerRepo = useCustomerRepository();
   const [form, setForm] = useState<CustomCakeRequest>(blank);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const update = (field: keyof CustomCakeRequest, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -62,17 +62,15 @@ export default function CustomCakeForm({ settings }: { settings: ShopSettings })
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.customerName.trim() || !form.mobile.trim()) {
       setError('Please enter your name and mobile number so we can reach you.');
       return;
     }
-    customerRepo.upsertByMobile({
-      name: form.customerName,
-      mobile: form.mobile,
-      source: 'custom-cake-request',
-    });
+    setSubmitting(true);
+    await submitCustomCakeOrder(form);
+    setSubmitting(false);
     const message = buildCustomCakeMessage(settings.businessName, form);
     window.open(buildWhatsAppUrl(settings.whatsappNumber, message), '_blank');
   };
@@ -193,13 +191,14 @@ export default function CustomCakeForm({ settings }: { settings: ShopSettings })
           type="submit"
           variant="whatsapp"
           className="w-full"
-          disabled={!settings.customCakeRequestEnabled}
+          disabled={!settings.customCakeRequestEnabled || submitting}
         >
-          Send Request on WhatsApp
+          {submitting ? 'Sending…' : 'Send Request on WhatsApp'}
         </GlassButton>
         <p className="text-center text-[11px] leading-snug text-ink/45">
           This is a quote request. {settings.businessName} will confirm design, pricing and
           availability with you over WhatsApp.
+          {!settings.deliveryEnabled && ' Pickup only — delivery coming soon.'}
         </p>
       </form>
     </GlassCard>

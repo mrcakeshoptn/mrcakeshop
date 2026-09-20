@@ -1,31 +1,29 @@
-// ---------------------------------------------------------------------------
-// V1 DEMO AUTH ONLY.
-// Replace with real server-side authentication before production
-// (NextAuth/Auth.js, Supabase Auth, Firebase Auth, or a custom API) — see
-// README.md "V1 Limitations". This check runs entirely in the browser, the
-// "password" ships inside the static bundle, and anyone can bypass it via
-// devtools. It exists only so the admin dashboard prototype isn't wide open
-// by default, not to protect real business data.
-// ---------------------------------------------------------------------------
+import { supabase } from '@/lib/supabaseClient';
+import type { Session } from '@supabase/supabase-js';
 
-import { readJSON, removeKey, writeJSON } from '@/lib/storage';
+/**
+ * Real authentication via Supabase Auth — replaces the old single shared
+ * demo password. Admin accounts (email + password) are created either in the
+ * Supabase Dashboard (Authentication → Users) or from Admin → Team once at
+ * least one owner account exists. Sessions are managed by supabase-js itself
+ * (stored in localStorage, auto-refreshed), so these are thin wrappers.
+ */
 
-const SESSION_KEY = 'mr_cake_admin';
-
-// Change this before sharing the demo link with anyone, or better: set
-// NEXT_PUBLIC_ADMIN_DEMO_PASSWORD at build time so it isn't in source control.
-const DEMO_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_DEMO_PASSWORD || 'mrcake-demo';
-
-export function attemptLogin(password: string): boolean {
-  const ok = password === DEMO_PASSWORD;
-  if (ok) writeJSON(SESSION_KEY, { loggedIn: true, at: new Date().toISOString() });
-  return ok;
+export async function login(email: string, password: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  return { error: error?.message || null };
 }
 
-export function isLoggedIn(): boolean {
-  return readJSON<{ loggedIn: boolean }>(SESSION_KEY, { loggedIn: false }).loggedIn;
+export async function logout(): Promise<void> {
+  await supabase.auth.signOut();
 }
 
-export function logout(): void {
-  removeKey(SESSION_KEY);
+export async function getSession(): Promise<Session | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+export function onAuthStateChange(callback: (session: Session | null) => void) {
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => callback(session));
+  return () => data.subscription.unsubscribe();
 }

@@ -37,6 +37,7 @@ export interface CakeProduct {
   active: boolean;
   designer: boolean;
   customAvailable: boolean;
+  fastMoving: boolean;
   weights: WeightPrice[];
   shapeCharges: ShapeCharge[];
   egglessAvailable: boolean;
@@ -96,18 +97,22 @@ export function blankCakeProduct(): CakeProduct {
     active: true,
     designer: false,
     customAvailable: false,
+    fastMoving: false,
     weights: [
+      { weightKg: 0.5, price: 0, active: true },
       { weightKg: 1, price: 0, active: true },
       { weightKg: 1.5, price: 0, active: true },
       { weightKg: 2, price: 0, active: true },
     ],
     shapeCharges: [
+      { weightKg: 0.5, round: 0, square: 0, heart: 0 },
       { weightKg: 1, round: 0, square: 0, heart: 0 },
       { weightKg: 1.5, round: 0, square: 0, heart: 0 },
       { weightKg: 2, round: 0, square: 0, heart: 0 },
     ],
     egglessAvailable: true,
     egglessCharges: [
+      { weightKg: 0.5, charge: 0 },
       { weightKg: 1, charge: 0 },
       { weightKg: 1.5, charge: 0 },
       { weightKg: 2, charge: 0 },
